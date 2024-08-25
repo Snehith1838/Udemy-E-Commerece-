@@ -19,8 +19,7 @@ public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long categoryId;
-    @NotBlank
-    @Size(min = 3, message = "Category name must contain atleast 3 characters")
+
     private String categoryName;
 
 }
