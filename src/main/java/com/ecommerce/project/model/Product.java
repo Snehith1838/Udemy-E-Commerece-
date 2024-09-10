@@ -1,6 +1,7 @@
 package com.ecommerce.project.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,8 +15,10 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long productId;
+    @Size(min = 3, message = "Product Name must contain atleast 3 characters!!")
     private String productName;
     private String image;
+    @Size(min = 6, message = "Description must contain atleast 6 characters!!")
     private String description;
     private Integer quantity;
     private double price;
@@ -25,5 +28,9 @@ public class Product {
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;
+
+    @ManyToOne
+    @JoinColumn(name = "seller_id")
+    private User user;
 
 }
