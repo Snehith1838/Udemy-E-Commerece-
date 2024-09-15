@@ -12,6 +12,13 @@ public class LoginResponse {
 
     private List<String> roles;
 
+    public LoginResponse(Long id,String username, List<String> roles, String jwtToken) {
+        this.username = username;
+        this.roles = roles;
+        this.id = id;
+        this.jwtToken = jwtToken;
+    }
+
     public LoginResponse(Long id,String username, List<String> roles) {
         this.username = username;
         this.roles = roles;

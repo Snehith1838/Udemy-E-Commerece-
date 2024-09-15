@@ -2,10 +2,13 @@ package com.ecommerce.project.service;
 
 import com.ecommerce.project.exceptions.APIException;
 import com.ecommerce.project.exceptions.ResourceNotFoundException;
+import com.ecommerce.project.model.Cart;
 import com.ecommerce.project.model.Category;
 import com.ecommerce.project.model.Product;
+import com.ecommerce.project.payload.CartDTO;
 import com.ecommerce.project.payload.ProductDTO;
 import com.ecommerce.project.payload.ProductResponse;
+import com.ecommerce.project.repository.CartRepository;
 import com.ecommerce.project.repository.CategoryRepository;
 import com.ecommerce.project.repository.ProductRepository;
 import org.modelmapper.ModelMapper;
@@ -25,10 +28,18 @@ public class ProductServiceImplementation implements ProductService{
     private ProductRepository productRepository;
 
     @Autowired
+    private CartService cartService;
+
+    @Autowired
     private CategoryRepository categoryRepository;
 
     @Autowired
+    private CartRepository cartRepository;
+
+    @Autowired
     private ModelMapper modelMapper;
+
+
 
     @Override
     public ProductDTO addProduct(Long categoryId, ProductDTO productDTO) {
@@ -51,6 +62,9 @@ public class ProductServiceImplementation implements ProductService{
 
         return modelMapper.map(savedProduct, ProductDTO.class);
     }
+
+
+
 
     @Override
     public ProductResponse getAllProducts(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
@@ -77,6 +91,9 @@ public class ProductServiceImplementation implements ProductService{
         productResponse.setLastPage(productPage.isLast());
         return productResponse;
     }
+
+
+
 
     @Override
     public ProductResponse getProductByCategory(Long categoryId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
@@ -108,6 +125,9 @@ public class ProductServiceImplementation implements ProductService{
 
     }
 
+
+
+
     @Override
     public ProductResponse getProductByKeyword(String keyword, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
         Sort sortByAndOrder = sortBy.equalsIgnoreCase("asc")
@@ -133,6 +153,9 @@ public class ProductServiceImplementation implements ProductService{
         return productResponse;
     }
 
+
+
+
     @Override
     public ProductDTO updateProduct(Long productId,ProductDTO productDTO) {
         Product  product= modelMapper.map(productDTO, Product.class);
@@ -149,13 +172,36 @@ public class ProductServiceImplementation implements ProductService{
         savedProduct.setSpecialPrice(specialPrice);
 
         Product productSaved = productRepository.save(savedProduct);
+
+        List<Cart> carts = cartRepository.findCartsByProductId(productId);
+
+        List<CartDTO> cartDTOS = carts.stream().map(cart->{
+            CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
+
+            List<ProductDTO> products = cart.getCartItems().stream()
+                    .map(p-> modelMapper.map(p.getProduct(), ProductDTO.class))
+                    .toList();
+            cartDTO.setProducts(products);
+
+            return cartDTO;
+        }).toList();
+
+        cartDTOS.forEach(cart-> cartService.updateProductInCarts(cart.getCartId(), productId));
+
         return modelMapper.map(productSaved, ProductDTO.class);
     }
+
+
 
     @Override
     public ProductDTO deleteProduct(Long productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(()-> new ResourceNotFoundException("Product","productId",productId));
+
+        //deleting product in carts
+        List<Cart> carts = cartRepository.findCartsByProductId(productId);
+        carts.forEach(cart-> cartService.deleteProductFromCart(cart.getCartId(), productId));
+
         productRepository.delete(product);
         ProductDTO deletedProductDTO = modelMapper.map(product, ProductDTO.class);
         return deletedProductDTO;
